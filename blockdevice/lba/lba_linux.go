@@ -7,6 +7,7 @@ package lba
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"unsafe"
 
@@ -23,22 +24,26 @@ func NewLBA(f *os.File) (lba *LBA, err error) {
 	var psize int64
 	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, f.Fd(), unix.BLKPBSZGET, uintptr(unsafe.Pointer(&psize))); errno != 0 {
 		if st.Mode().IsRegular() {
+			log.Printf("psize assumed")
 			// Not a device, assume default block size.
 			psize = 512
 		} else {
 			return nil, errors.New("BLKPBSZGET failed")
 		}
 	}
+	log.Printf("psize: %d", psize)
 
 	var lsize int64
 	if _, _, errno := unix.Syscall(unix.SYS_IOCTL, f.Fd(), unix.BLKSSZGET, uintptr(unsafe.Pointer(&lsize))); errno != 0 {
 		if st.Mode().IsRegular() {
+			log.Printf("lsize assumed")
 			// Not a device, assume default block size.
 			lsize = 512
 		} else {
 			return nil, errors.New("BLKSSZGET failed")
 		}
 	}
+	log.Printf("lsize: %d", lsize)
 
 	// Seek to the end to get the size.
 	size, err := f.Seek(0, 2)
